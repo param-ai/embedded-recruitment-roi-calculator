@@ -13,15 +13,29 @@ interface ResultsSummaryProps {
   totalSalaries: number
   totalCommission: number
   hiringData: HiringData[]
+  currency?: "INR" | "USD"
 }
 
-export function ResultsSummary({ totalHires, totalSalaries, totalCommission, hiringData }: ResultsSummaryProps) {
+export function ResultsSummary({ totalHires, totalSalaries, totalCommission, hiringData, currency = "INR" }: ResultsSummaryProps) {
+  // Currency conversion constant
+  const INR_TO_USD = 1 / 83.5; // 1 INR = 0.012 USD
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(amount)
+    if (currency === "INR") {
+      return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 0,
+      }).format(amount)
+    } else {
+      // Convert to USD
+      const usdAmount = amount * INR_TO_USD;
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: usdAmount >= 1000 ? 0 : 2,
+      }).format(usdAmount)
+    }
   }
 
   // Calculate weighted average commission percentage

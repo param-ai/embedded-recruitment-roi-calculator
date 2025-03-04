@@ -15,15 +15,36 @@ interface RoiComparisonProps {
     roiPercentage: number
   }
   theme: "indigo" | "purple" // Theme color for highlighting
+  currency?: "INR" | "USD" // Optional currency parameter
 }
 
-export function RoiComparison({ title, description, traditional, embedded, theme }: RoiComparisonProps) {
+export function RoiComparison({ 
+  title, 
+  description, 
+  traditional, 
+  embedded, 
+  theme, 
+  currency = "INR" 
+}: RoiComparisonProps) {
+  // Currency conversion constant
+  const INR_TO_USD = 1 / 83.5; // 1 INR = 0.012 USD
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(amount)
+    if (currency === "INR") {
+      return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 0,
+      }).format(amount)
+    } else {
+      // Convert to USD
+      const usdAmount = amount * INR_TO_USD;
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: usdAmount >= 1000 ? 0 : 2,
+      }).format(usdAmount)
+    }
   }
 
   // Set theme colors based on the theme prop

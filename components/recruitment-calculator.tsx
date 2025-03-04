@@ -10,6 +10,7 @@ import { ResultsSummary } from "@/components/results-summary"
 import { RoiComparison } from "@/components/roi-comparison"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Update the HiringData interface to include average salary per department
 export interface HiringData {
@@ -33,7 +34,29 @@ export function RecruitmentCalculator() {
   const [calculated, setCalculated] = useState<boolean>(false)
   const [monthlySubscriptionFee, setMonthlySubscriptionFee] = useState<number>(200000)
   const [manualRecruiters, setManualRecruiters] = useState<number | null>(null)
-
+  const [currency, setCurrency] = useState<"INR" | "USD">("INR")
+  
+  // Currency conversion constants
+  const USD_TO_INR = 83.5 // 1 USD = 83.5 INR
+  const INR_TO_USD = 1 / USD_TO_INR // 1 INR = 0.012 USD
+  
+  // Currency conversion helpers
+  const formatCurrency = (amount: number) => {
+    if (currency === "INR") {
+      return `₹${amount.toLocaleString('en-IN')}`
+    } else {
+      return `$${(amount * INR_TO_USD).toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+    }
+  }
+  
+  const displaySubscriptionFee = currency === "INR" 
+    ? monthlySubscriptionFee 
+    : Math.round(monthlySubscriptionFee * INR_TO_USD)
+  
+  const handleCurrencyChange = (newCurrency: "INR" | "USD") => {
+    setCurrency(newCurrency)
+  }
+  
   const totalHires = hiringData.reduce((sum, dept) => sum + dept.hires, 0)
 
   // Update calculations to use department-specific salaries
@@ -105,14 +128,33 @@ export function RecruitmentCalculator() {
     <div className="mx-auto max-w-4xl">
       <Card className="mb-8 border border-indigo-200 shadow-lg dark:border-indigo-900">
         <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950">
-          <CardTitle className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
-            <Users className="h-5 w-5" />
-            Hiring Requirements
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+              <Users className="h-5 w-5" />
+              Hiring Requirements
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="currency-selector" className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                Currency:
+              </Label>
+              <Select 
+                value={currency} 
+                onValueChange={(value: "INR" | "USD") => handleCurrencyChange(value)}
+              >
+                <SelectTrigger id="currency-selector" className="w-24">
+                  <SelectValue placeholder="INR" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INR">INR (₹)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <CardDescription>Enter your hiring needs and current recruitment costs</CardDescription>
         </CardHeader>
         <CardContent className="p-6">
-          <HiringInputs hiringData={hiringData} onHiringDataChange={handleHiringDataChange} />
+          <HiringInputs hiringData={hiringData} onHiringDataChange={handleHiringDataChange} currency={currency} />
           
           {/* Total Hires Summary */}
           {totalHires > 0 && (
@@ -136,15 +178,19 @@ export function RecruitmentCalculator() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="subscription-fee" className="flex items-center gap-1">
-                    <DollarSign className="h-4 w-4" /> Monthly Subscription Fee per Embedded Recruiter (INR)
+                    <DollarSign className="h-4 w-4" /> Monthly Budget per Recruiter ({currency})
                   </Label>
                   <Input
                     id="subscription-fee"
                     type="number"
                     min="0"
-                    step="10000"
-                    value={monthlySubscriptionFee}
-                    onChange={(e) => handleSubscriptionFeeChange(Number.parseInt(e.target.value) || 200000)}
+                    step={currency === "INR" ? "10000" : "100"}
+                    value={displaySubscriptionFee}
+                    onChange={(e) => {
+                      const value = Number.parseInt(e.target.value) || 0;
+                      const inrValue = currency === "INR" ? value : Math.round(value * USD_TO_INR);
+                      handleSubscriptionFeeChange(inrValue);
+                    }}
                     className="bg-white/80 dark:bg-slate-900/80"
                   />
                 </div>
@@ -208,6 +254,7 @@ export function RecruitmentCalculator() {
             totalSalaries={totalSalaries}
             totalCommission={totalCommission}
             hiringData={hiringData}
+            currency={currency}
           />
 
           <Card className="mb-8 mt-8 overflow-hidden border-2 border-purple-500 shadow-lg">
@@ -240,8 +287,8 @@ export function RecruitmentCalculator() {
                   <RoiComparison
                     title="Time-Optimized Approach"
                     description={
-                      `Complete all ${totalHires} hires in ${targetMonths} months with ${recruitersNeededForTime} embedded recruiter${recruitersNeededForTime > 1 ? 's' : ''} ` + 
-                      `(${(totalHires / targetMonths).toFixed(1)} hires/month, ${hiresPerRecruiter} hires per recruiter per month)`
+                      `Complete all ${totalHires} hires in ${targetMonths} months with ${recruitersNeededForTime} dedicated recruiter${recruitersNeededForTime > 1 ? 's' : ''} ` + 
+                      `(${(totalHires / targetMonths).toFixed(1)} hires/month)`
                     }
                     traditional={{
                       cost: totalCommission,
@@ -255,13 +302,14 @@ export function RecruitmentCalculator() {
                       roiPercentage: timeBasedRoiPercentage,
                     }}
                     theme="indigo"
+                    currency={currency}
                   />
                 </TabsContent>
                 <TabsContent value="finance">
                   <RoiComparison
                     title="Cost-Optimized Approach"
                     description={
-                      `Use 1 embedded recruiter for maximum cost efficiency (₹${(monthlySubscriptionFee/100000).toFixed(1)} lakh/month)` +
+                      `Use 1 dedicated recruiter for maximum cost efficiency (${formatCurrency(monthlySubscriptionFee)}/month)` +
                       ` - completes all ${totalHires} hires in ${monthsNeededForOneRecruiter} months`
                     }
                     traditional={{
@@ -276,6 +324,7 @@ export function RecruitmentCalculator() {
                       roiPercentage: financeBasedRoiPercentage,
                     }}
                     theme="purple"
+                    currency={currency}
                   />
                 </TabsContent>
               </Tabs>

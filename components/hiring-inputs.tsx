@@ -7,9 +7,10 @@ import { Briefcase, DollarSign, Percent } from "lucide-react"
 interface HiringInputsProps {
   hiringData: HiringData[]
   onHiringDataChange: (index: number, field: "hires" | "commissionPercentage" | "averageSalary", value: number) => void
+  currency?: "INR" | "USD"
 }
 
-export function HiringInputs({ hiringData, onHiringDataChange }: HiringInputsProps) {
+export function HiringInputs({ hiringData, onHiringDataChange, currency = "INR" }: HiringInputsProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -22,9 +23,9 @@ export function HiringInputs({ hiringData, onHiringDataChange }: HiringInputsPro
                 "from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 border-blue-200 dark:border-blue-800",
               "Go-to-market":
                 "from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 border-emerald-200 dark:border-emerald-800",
-              "G&A":
+              "General & Administrative":
                 "from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 border-amber-200 dark:border-amber-800",
-              Executive:
+              "Executive":
                 "from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 border-purple-200 dark:border-purple-800",
             }
 
@@ -68,13 +69,13 @@ export function HiringInputs({ hiringData, onHiringDataChange }: HiringInputsPro
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor={`dept-salary-${index}`} className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4" /> Avg. Salary (INR)
+                      <DollarSign className="h-4 w-4" /> Avg. Salary ({currency})
                     </Label>
                     <Input
                       id={`dept-salary-${index}`}
                       type="number"
                       min="0"
-                      step="10000"
+                      step={currency === "INR" ? "10000" : "100"}
                       value={dept.averageSalary}
                       onChange={(e) => onHiringDataChange(index, "averageSalary", Number.parseInt(e.target.value) || 0)}
                       className="bg-white/80 dark:bg-slate-900/80"
